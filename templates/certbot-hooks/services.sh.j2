@@ -1,0 +1,11 @@
+#!/bin/bash
+{{ ansible_managed | comment }}
+
+logger -p notice -t "Certbot post hook" "Starting Certbot post hook for services"
+
+for SERVICE in {{ certbot_ssl_services | default([]) | join(' ') }}; do
+    logger -p notice -t "Cettbo post hook - ${SERVICE} restart"
+    systemctl restart ${SERVICE}
+done
+
+logger -p notice -t "Certbot post hook done"

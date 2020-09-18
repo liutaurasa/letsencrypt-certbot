@@ -1,0 +1,9 @@
+---
+# vars file for letsencrypt-certbot
+certbot:
+  RedHat:
+    packages: ['certbot']
+    plugins:
+      apache: ['certbot-apache']
+      nginx: ['certbot-nginx']
+      lighttpd: []

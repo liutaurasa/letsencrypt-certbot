@@ -1,0 +1,5 @@
+---
+- name: Install certbot
+  yum:
+    name: "{{ certbot[ ansible_os_family ]['packages'] + certbot[ ansible_os_family ]['plugins'][ _plugins_for ] | default([]) if _plugins_for is defined else [] }}"
+    state: "{{ packages_state | default('present') }}"

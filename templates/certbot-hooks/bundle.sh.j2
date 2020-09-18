@@ -1,0 +1,15 @@
+#!/bin/bash
+{{ ansible_managed | comment }}
+
+if [ -z ${RENEWED_LINEAGE} ]; then
+    echo "RENEWED_LINEAGE variable not defined" >&2
+    exit 1
+fi
+
+FULLCHAIN_FILE=${RENEWED_LINEAGE}/fullchain.pem
+PRIVKEY_FILE=${RENEWED_LINEAGE}/privkey.pem
+BUNDLE_FILE=${RENEWED_LINEAGE}/bundle.pem
+
+cat ${FULLCHAIN_FILE} ${PRIVKEY_FILE} > ${BUNDLE_FILE}
+
+logger -p notice -t "Certbot deploy hook" "Certbot bundle hook finished for ${BUNDLE_FILE}"

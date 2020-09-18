@@ -1,0 +1,3 @@
+---
+# defaults file for letsencrypt-certbot
+certbot_ssl_services: []

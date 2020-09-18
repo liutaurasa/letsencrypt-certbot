@@ -1,0 +1,50 @@
+---
+# tasks file for letsencrypt-certbot
+- name: Install certbot
+  include_tasks:
+    file: "{{ ansible_os_family }}_install.yaml"
+
+- name: "Certbot | Create hooks | Post"
+  template:
+    src: "certbot-hooks/{{ _hook.name }}.j2"
+    dest: "/etc/letsencrypt/renewal-hooks/{{ _hook.type }}/{{ _hook.name }}"
+    owner: root
+    group: root
+    mode: '0755'
+  loop: "{{ certbot_hooks | default([]) }}"
+  loop_control:
+    loop_var: _hook
+
+- name: Get installed certbot certificates
+  shell:
+    cmd: "certbot certificates 2>/dev/null | grep 'Certificate Name' | awk -F': ' '{print $2}'"
+  register: _installed_letsencrypt_certs
+  ignore_errors: "{{ ansible_check_mode }}"
+  check_mode: no
+
+- debug:
+    var: _installed_letsencrypt_certs
+
+- name: "Open Firewalld |"
+  firewalld:
+    service: http
+    state: enabled
+    immediate: True
+
+- name: "Stop Webserver |"
+  service:
+    name: "{{ _webservice }}"
+    state: stopped
+
+- name: "Install certbot certificates |"
+  shell:
+    cmd: "certbot certonly --standalone --domain {{ _domain.name }} {{ _domain.aliases | default([]) | join(' ') }} --noninteractive --register --email {{ certbot_email | default('liutauras.adomaitis@infosaitas.lt') }} --agree-tos {{ '--test-cert' if certbot_test | default(True) else ''}}"
+  when: _domain.name not in _installed_letsencrypt_certs
+  loop: "{{ _domains }}"
+  loop_control:
+    loop_var: _domain
+
+- name: "Start Webserver |"
+  service:
+    name: "{{ _webservice }}"
+    state: started

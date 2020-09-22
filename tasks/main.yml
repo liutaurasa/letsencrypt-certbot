@@ -4,6 +4,15 @@
   include_tasks:
     file: "{{ ansible_os_family }}_install.yaml"
 
+- name: "Certbot | Get plugin TLS settings |"
+  copy:
+    src: current_options_ssl_apache.conf
+    dest: "/etc/letsencrypt/options-ssl-{{ _certbot_plugin }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  when: _certbot_plugin is defined
+
 - name: "Certbot | Create hooks | Post"
   template:
     src: "certbot-hooks/{{ _hook.name }}.j2"

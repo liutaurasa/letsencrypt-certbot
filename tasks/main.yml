@@ -24,12 +24,13 @@
   loop_control:
     loop_var: _hook
 
-- name: Get installed certbot certificates
+- name: "Certbot | Get installed certbot certificates |"
   shell:
     cmd: "certbot certificates 2>/dev/null | grep 'Certificate Name' | awk -F': ' '{print $2}'"
   register: _installed_letsencrypt_certs
   ignore_errors: "{{ ansible_check_mode }}"
   check_mode: no
+  changed_when: False
 
 - debug:
     var: _installed_letsencrypt_certs

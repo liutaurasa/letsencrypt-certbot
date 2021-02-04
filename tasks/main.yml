@@ -24,6 +24,12 @@
   loop_control:
     loop_var: _hook
 
+- name: "Open Firewalld |"
+  firewalld:
+    service: http
+    state: enabled
+    immediate: True
+
 - name: "Certbot | Get installed certbot certificates |"
   shell:
     cmd: "certbot certificates 2>/dev/null | grep 'Certificate Name' | awk -F': ' '{print $2}'"
@@ -32,29 +38,41 @@
   check_mode: no
   changed_when: False
 
-- debug:
-    var: _installed_letsencrypt_certs
+- name: "Letsencrypt certificates | Run certbot |"
+  block:
+    - name: "Stop Webserver |"
+      service:
+        name: "{{ _webservice }}"
+        state: stopped
+    
+    - name: "Install certbot certificates |"
+      shell:
+        cmd: >-
+          certbot certonly
+          --standalone
+          --domain {{ _domain.name }} {{ _domain.aliases | default([]) | join( ' ') }}
+          --noninteractive
+          --register
+          --email {{ certbot_email | default('liutauras.adomaitis@infosaitas.lt') }}
+          --agree-tos {{ '--test-cert' if certbot_test | default(True) else ''}}
+      loop: "{{ _domains }}"
+      loop_control:
+        loop_var: _domain
+      when: _domain.name not in _installed_letsencrypt_certs.stdout_lines
+  always:
+    - name: "Start Webserver |"
+      service:
+        name: "{{ _webservice }}"
+        state: started
+  when: _domains | map(attribute='name') | difference(_installed_letsencrypt_certs.stdout_lines) | length > 0
 
-- name: "Open Firewalld |"
-  firewalld:
-    service: http
-    state: enabled
-    immediate: True
-
-- name: "Stop Webserver |"
+- name: "Enable certbot systemd service"
   service:
-    name: "{{ _webservice }}"
-    state: stopped
+    name: "certbot-renew.service"
+    enabled: True
 
-- name: "Install certbot certificates |"
-  shell:
-    cmd: "certbot certonly --standalone --domain {{ _domain.name }} {{ _domain.aliases | default([]) | join(' ') }} --noninteractive --register --email {{ certbot_email | default('liutauras.adomaitis@infosaitas.lt') }} --agree-tos {{ '--test-cert' if certbot_test | default(True) else ''}}"
-  when: _domain.name not in _installed_letsencrypt_certs
-  loop: "{{ _domains }}"
-  loop_control:
-    loop_var: _domain
-
-- name: "Start Webserver |"
+- name: "Enable certbot systemd timer"
   service:
-    name: "{{ _webservice }}"
+    name: "certbot-renew.timer"
+    enabled: True
     state: started

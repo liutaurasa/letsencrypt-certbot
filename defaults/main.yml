@@ -1,3 +1,7 @@
 ---
 # defaults file for letsencrypt-certbot
-certbot_ssl_services: []
+packages_state: present
+
+certbot_email: certbo@example.com
+
+fw_type: firewalld

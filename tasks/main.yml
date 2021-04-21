@@ -1,10 +1,10 @@
 ---
 # tasks file for letsencrypt-certbot
-- name: Install certbot
+- name: Let's Encrypt | Install certbot |
   include_tasks:
     file: "{{ ansible_os_family }}_install.yaml"
 
-- name: "Certbot | Get plugin TLS settings |"
+- name: "Let's Encrypt | Certbot | Get plugin TLS settings |"
   copy:
     src: current_options_ssl_apache.conf
     dest: "/etc/letsencrypt/options-ssl-{{ _certbot_plugin }}.conf"
@@ -13,7 +13,7 @@
     mode: '0644'
   when: _certbot_plugin is defined
 
-- name: "Certbot | Create hooks | Post"
+- name: "Let's Encrypt | Certbot | Create hooks | Post |"
   template:
     src: "certbot-hooks/{{ _hook.name }}.j2"
     dest: "/etc/letsencrypt/renewal-hooks/{{ _hook.type }}/{{ _hook.name }}"
@@ -24,55 +24,110 @@
   loop_control:
     loop_var: _hook
 
-- name: "Open Firewalld |"
+- name: "Let's Encrypt | Certbot create directory for Local facts |"
+  file:
+    path: /etc/ansible/facts.d/
+    state: directory
+    owner: root
+    group: root
+
+- name: "Let's Encrypt | Local facts |"
+  copy:
+    src: certificates.fact
+    dest: /etc/ansible/facts.d/certificates.fact
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: "Let's Encrypt | Get local facts |"
+  setup:
+    filter: ansible_local
+  ignore_errors: "{{ ansible_check_mode }}"
+  check_mode: False
+  when: ansible_facts['ansible_local'] | length == 0 
+
+- name: "Let's Encrypt | Open Firewalld |"
   firewalld:
     service: http
     state: enabled
     immediate: True
+  when: fw_type == 'firewalld'
 
-- name: "Certbot | Get installed certbot certificates |"
-  shell:
-    cmd: "certbot certificates 2>/dev/null | grep 'Certificate Name' | awk -F': ' '{print $2}'"
-  register: _installed_letsencrypt_certs
-  ignore_errors: "{{ ansible_check_mode }}"
-  check_mode: no
-  changed_when: False
+# - name: "Let's Encrypt | Certbot | Get installed certbot certificates |"
+#   shell:
+#     cmd: "certbot certificates 2>/dev/null | grep 'Certificate Name' | awk -F': ' '{print $2}'"
+#   register: _installed_letsencrypt_certs
+#   ignore_errors: "{{ ansible_check_mode }}"
+#   check_mode: no
+#   changed_when: False
 
-- name: "Letsencrypt certificates | Run certbot |"
+- name: "Let's Encrypt | Certificates | Run certbot |"
   block:
-    - name: "Stop Webserver |"
+    - name: "Let's Encrypt | Stop Webserver |"
       service:
         name: "{{ _webservice }}"
         state: stopped
+      ignore_errors: True
+      when: _webservice is defined
     
-    - name: "Install certbot certificates |"
+    - name: "Let's Encrypt | Install certbot certificates |"
       shell:
         cmd: >-
           certbot certonly
           --standalone
-          --domain {{ _domain.name }} {{ _domain.aliases | default([]) | join( ' ') }}
+          --domain {{ _domain['name'] }}{{ ',' + _domain['aliases'] | join( ',') if _domain['aliases'] is defined else '' }}
           --noninteractive
           --register
-          --email {{ certbot_email | default('liutauras.adomaitis@infosaitas.lt') }}
-          --agree-tos {{ '--test-cert' if certbot_test | default(True) else ''}}
+          --email {{ certbot_email }}
+          --agree-tos {{ '--test-cert' if certbot_test | bool | default(True) else ''}}
       loop: "{{ _domains }}"
       loop_control:
         loop_var: _domain
-      when: _domain.name not in _installed_letsencrypt_certs.stdout_lines
+      when:
+        - _domain['name'] not in ansible_local['certificates'].keys()
   always:
-    - name: "Start Webserver |"
+    - name: "Let's Encrypt | Start Webserver |"
       service:
         name: "{{ _webservice }}"
         state: started
-  when: _domains | map(attribute='name') | difference(_installed_letsencrypt_certs.stdout_lines) | length > 0
+      ignore_errors: True
+      when: _webservice is defined
+  when:
+    - ansible_local['certificates'] is defined
+    - _domains | map(attribute='name') | difference(ansible_local['certificates'].keys()) | length > 0
 
-- name: "Enable certbot systemd service"
+- name: "Let's Encrypt | Enable certbot systemd service"
   service:
     name: "certbot-renew.service"
     enabled: True
 
-- name: "Enable certbot systemd timer"
+- name: "Let's Encrypt | Enable certbot systemd timer"
   service:
     name: "certbot-renew.timer"
     enabled: True
     state: started
+
+- name: "Let's Encrypt | Permissions |"
+  file:
+    path: /etc/letsencrypt/{{ item }}
+    owner: root
+    group: mail
+    mode: "0750"
+  loop:
+    - archive
+    - live
+
+- name: "Let's Encrypt | Find privkey1.pem files"
+  find:
+    pattern: privkey1.pem
+    paths: /etc/letsencrypt/archive
+    recurse: True
+  register: _privkeys
+
+- name: "Let's Encrypt | Set privkey1.pem permissions"
+  file:
+    path: "{{ item['path'] }}"
+    owner: root
+    group: mail
+    mode: "0650"
+  loop: "{{ _privkeys['files'] }}"

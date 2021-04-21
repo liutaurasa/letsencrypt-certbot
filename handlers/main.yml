@@ -1,2 +1,23 @@
 ---
 # handlers file for letsencrypt-certbot
+# - name: Certbot force renew | Stop webservice
+#   service:
+#     name: "{{ _webservice }}"
+#     state: stopped
+#   listen: Certbot force renew
+#   when:
+#     - _webservice is defined
+# 
+# - name: Certbot force renew | Run
+#   command:
+#     cmd: >-
+#       /usr/bin/certbot renew --force-renewal
+#   listen: Certbot force renew
+# 
+# - name: Certbot force renew | Start webservice
+#   service:
+#     name: "{{ _webservice }}"
+#     state: started
+#   listen: Certbot force renew
+#   when:
+#     - _webservice is defined

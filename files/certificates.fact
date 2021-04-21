@@ -1,0 +1,18 @@
+#!/usr/bin/python
+
+from configparser import ConfigParser
+from glob import glob
+from os.path import basename, splitext
+from json import dumps
+
+renewal_files = glob('/etc/letsencrypt/renewal/*.conf')
+
+config = ConfigParser()
+
+for file in renewal_files:
+    section = splitext(basename(file))[0]
+    with open(file) as stream:
+        config.read_string(u"[%s]\n" % section + stream.read())
+#    print(config.items(section))     # -> "/path/name/"
+
+print dumps({s:dict(config.items(s)) for s in config.sections()}, indent=4)

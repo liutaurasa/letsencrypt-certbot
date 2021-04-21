@@ -1,8 +1,10 @@
 ---
 # vars file for letsencrypt-certbot
 certbot:
+  production_server: https://acme-v02.api.letsencrypt.org/directory
+  staging_server: https://acme-staging-v02.api.letsencrypt.org/directory
   RedHat:
-    packages: ['certbot']
+    packages: ['certbot', 'python-configparser']
     plugins:
       apache: ['certbot-apache']
       nginx: ['certbot-nginx']

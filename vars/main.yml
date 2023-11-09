@@ -4,8 +4,21 @@ certbot:
   production_server: https://acme-v02.api.letsencrypt.org/directory
   staging_server: https://acme-staging-v02.api.letsencrypt.org/directory
   RedHat:
-    packages: ['certbot', 'python-configparser']
+    packages: ['certbot', 'gawk']
+    python_version: 'python36'
     plugins:
-      apache: ['certbot-apache']
-      nginx: ['certbot-nginx']
+      apache: python3-certbot-apache
+      nginx: python3-certbot-nginx
       lighttpd: []
+    service: certbot-renew.service
+    timer: certbot-renew.timer
+    webroot_path:
+      apache: /var/www/html
+  Debian:
+    packages: ['certbot', 'gawk']
+    plugins:
+      apache: python3-certbot-apache
+      nginx: python3-certbot-nginx
+      lighttpd: []
+    service: certbot.service
+    timer: certbot.timer

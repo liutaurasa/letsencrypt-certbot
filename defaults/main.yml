@@ -2,6 +2,6 @@
 # defaults file for letsencrypt-certbot
 packages_state: present
 
-certbot_email: certbo@example.com
+certbot_email: webmaster@{{ ansible_domain }}
 
 fw_type: firewalld

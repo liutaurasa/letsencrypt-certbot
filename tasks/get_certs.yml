@@ -1,0 +1,18 @@
+---
+- name: "Let's Encrypt certificates installed"
+  shell:
+    cmd: "certbot certificates | /usr/local/bin/certbot-certificates-to-json.awk"
+  changed_when: False
+  check_mode: False
+  register: _certbot_certs
+  tags:
+    - always
+
+- name: Set certificates fact
+  set_fact:
+    certbot_certs_installed: "{{ _certbot_certs['stdout'] | from_json }}"
+  changed_when: False
+  check_mode: False
+  tags:
+    - always
+

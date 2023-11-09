@@ -21,3 +21,15 @@
 #   listen: Certbot force renew
 #   when:
 #     - _webservice is defined
+
+
+#- name: Run deploy hook
+#  command:
+#    cmd: deploy
+#    chdir: /etc/letsenrypt/live
+#  environment:
+#    RENEWED_LINEAGE:
+
+- name: Run deploy hook
+  debug:
+    var: _certbot_new_certs

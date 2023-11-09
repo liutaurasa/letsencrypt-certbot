@@ -1,0 +1,25 @@
+---
+- name: Enable python module
+  command:
+    cmd: dnf -y module enable {{ certbot[ansible_os_family]['python_version'] }}
+    warn: False
+  when:
+    - ansible_os_family == 'RedHat'
+    - ansible_distribution_major_version == '8'
+  tags:
+    - packages
+
+- name: Install certbot
+  package:
+    name: "{{ certbot[ansible_os_family]['packages'] + ([certbot[ansible_os_family]['plugins'][certbot_plugin]] if certbot_plugin is defined else []) }}"
+    state: "{{ packages_state | default('present') }}"
+  tags:
+    - packages
+
+- name: Get certbot version
+  command:
+    cmd: /usr/bin/certbot --version
+  register: _certbot_version
+  changed_when: False
+  tags:
+    - certbot

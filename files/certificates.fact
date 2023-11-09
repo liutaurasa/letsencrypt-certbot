@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/libexec/platform-python
 
 from configparser import ConfigParser
 from glob import glob

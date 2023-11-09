@@ -1,0 +1,14 @@
+- name: debug
+  debug:  
+    msg: "{{ lookup('community.general.dig', _fqdn, '@8.8.8.8') }}"
+  loop: "{{ [_domain['name']] + _domain['aliases'] | default([]) }}"
+  loop_control:
+    loop_var: _fqdn
+
+- name: Simple A record (IPV4 address) lookup for the domain
+  assert:
+    that: "{{ lookup('community.general.dig', _fqdn) }}"
+    fail_msg: "Domain {{ _fqdn }} does not exist"
+  loop: "{{ [_domain['name']] + _domain['aliases'] | default([]) }}"
+  loop_control:
+    loop_var: _fqdn

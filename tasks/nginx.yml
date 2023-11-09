@@ -1,0 +1,32 @@
+---
+#- import_tasks: check_dns.yml
+#  tags:
+#    - certbot
+#    - nginx
+
+- block:
+    - name: Install Let's Encrypt certificates
+      shell:
+        cmd: >-
+          certbot run
+          --nginx
+          --domain {{ _domain['name'] }}{{ ',' + _domain['aliases'] | join( ',') if _domain['aliases'] is defined else '' }}
+          --noninteractive
+          --register
+          --email {{ certbot_email }}
+          --agree-tos {{ '--test-cert' if certbot_test | default(True) | bool else ''}}
+      register: _certbot_run
+  rescue:    
+    - name: certbot command run
+      debug:
+        var: _certbot_run
+    - meta: end_play
+  tags:
+    - certbot
+    - nginx
+
+- name: Update certbot_certs_installed variable
+  include_tasks: get_certs.yml
+  tags:
+    - certbot
+    - nginx

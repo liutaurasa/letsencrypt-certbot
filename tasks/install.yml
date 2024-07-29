@@ -21,5 +21,6 @@
     cmd: /usr/bin/certbot --version
   register: _certbot_version
   changed_when: False
+  check_mode: False
   tags:
     - certbot
